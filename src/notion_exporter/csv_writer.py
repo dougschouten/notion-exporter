@@ -1,17 +1,22 @@
 import csv
 
-FIELDNAMES = ["type", "id", "parent_id", "title", "people", "date", "technical_work_data"]
+BASE_FIELDNAMES = ["type", "id", "parent_id", "title", "people", "date", "technical_work_data"]
+FIELDNAMES = BASE_FIELDNAMES  # backward-compat alias
 
 
-def open_csv(output_path):
+def open_csv(output_path, extra_columns=None):
+    fieldnames = BASE_FIELDNAMES + list(extra_columns or [])
     f = open(output_path, "w", newline="", encoding="utf-8")
-    writer = csv.DictWriter(f, fieldnames=FIELDNAMES, quoting=csv.QUOTE_ALL)
+    writer = csv.DictWriter(
+        f, fieldnames=fieldnames, quoting=csv.QUOTE_ALL,
+        extrasaction="ignore", restval="",
+    )
     writer.writeheader()
     return f, writer
 
 
 def write_parent_row(writer, row):
-    writer.writerow({
+    d = {
         "type": "entry",
         "id": row.get("id", ""),
         "parent_id": "",
@@ -19,7 +24,12 @@ def write_parent_row(writer, row):
         "people": ";".join(row.get("people", [])),
         "date": row.get("date", ""),
         "technical_work_data": "",
-    })
+    }
+    # Merge any extra snake_case keys from the row dict
+    for key, val in row.items():
+        if key not in d:
+            d[key] = val
+    writer.writerow(d)
 
 
 def write_sub_row(writer, sub_row, people, parent_id):

@@ -7,6 +7,7 @@ from .notion_client import NotionClient
 from .database_fetcher import (
     fetch_database_metadata,
     extract_typed_properties,
+    extract_other_properties,
     fetch_entries,
     parse_entry_properties,
 )
@@ -100,8 +101,25 @@ def main():
         sys.exit(1)
     date_field = selected_date["name"]
 
+    # --- TUI: select extra property columns ---
+    exclude_names = set(person_fields) | {date_field}
+    other_props = extract_other_properties(properties, exclude_names)
+    extra_fields = []  # list of (original_name, snake_col)
+    if other_props:
+        other_rows = [{"name": p["name"], "column": p["snake"], "type": p["type"]} for p in other_props]
+        selected_extra = multi_select(
+            "Select extra property columns to include (ESC to skip)",
+            other_rows,
+            ["name", "type", "column"],
+            optional=True,
+        )
+        if selected_extra:
+            extra_fields = [(r["name"], r["column"]) for r in selected_extra]
+
     print(f"\nPerson fields : {', '.join(person_fields)}", file=err)
     print(f"Date field    : {date_field}", file=err)
+    if extra_fields:
+        print(f"Extra columns : {', '.join(col for _, col in extra_fields)}", file=err)
 
     # --- Fetch entries (before installing progress display) ---
     print(f"Querying database…", file=err)
@@ -127,12 +145,13 @@ def main():
         sys.stderr = ProgressStderr(display)
         return result
 
-    f, writer = open_csv(output_path)
+    extra_columns = [col for _, col in extra_fields]
+    f, writer = open_csv(output_path, extra_columns)
     entry_count = subitem_count = nontrivial_count = 0
 
     try:
         for i, entry in enumerate(entries, 1):
-            parent_row = parse_entry_properties(entry, person_fields, date_field)
+            parent_row = parse_entry_properties(entry, person_fields, date_field, extra_fields)
             title_preview = parent_row["title"][:55] + "…" if len(parent_row["title"]) > 55 else parent_row["title"]
             display.update(i, title_preview)
 

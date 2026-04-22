@@ -107,9 +107,9 @@ def single_select(title, rows, columns):
     return result[0]
 
 
-def multi_select(title, rows, columns):
+def multi_select(title, rows, columns, optional=False):
+    """Multi-select TUI. If optional=True, ESC returns [] without a warning."""
     if not rows:
-        print(f"[WARN] multi_select: no options available for \"{title}\"", file=sys.stderr)
         return []
 
     result = [None]
@@ -133,16 +133,18 @@ def multi_select(title, rows, columns):
                 else:
                     selected.add(current_row)
             elif key in (curses.KEY_ENTER, 10, 13):
-                if not selected:
+                if not selected and not optional:
                     error_msg = "Please select at least one option (Space to toggle)."
                 else:
                     result[0] = [rows[i] for i in sorted(selected)]
                     break
             elif key == 27:  # ESC
+                result[0] = []
                 break
 
     curses.wrapper(_run)
     if result[0] is None:
-        print(f"[WARN] Selection cancelled for \"{title}\"", file=sys.stderr)
+        if not optional:
+            print(f"[WARN] Selection cancelled for \"{title}\"", file=sys.stderr)
         return []
     return result[0]

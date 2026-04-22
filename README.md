@@ -34,10 +34,32 @@ PYTHONPATH=src python3 -m notion_exporter.cli <DATABASE_URL> --token <TOKEN> --s
 ### Example
 
 ```bash
-notion-export "https://www.notion.so/myworkspace/abc123...?v=..." \
+notion-export "https://www.notion.so/myworkspace/abc123..." \
   --token ntn_xxxxxxxxxxxx \
   --start 2024-01-01 \
   --end 2024-12-31
+```
+
+will produce something like
+
+```bash
+Database ID : abc123...
+Date range  : 2025-01-01 → 2025-12-31
+Output      : notion_export_2025-01-01_2025-12-31.csv
+
+Fetching database metadata…
+
+Person fields : Contributors
+Date field    : created_time (built-in)
+Extra columns : category, project
+Querying database…
+Found 800 entries.
+800 entries · 9685 sub-items (53% non-trivial) → notion_export_2025-01-01_2025-12-31.csv
+  ████████████████████████████████████████  100%  800/800 entries
+  Entries     : 800
+  Sub-items   : 9685
+  Non-trivial : 5140 (53%)
+  Output      : notion_export_2025-01-01_2025-12-31.csv
 ```
 
 A TUI will prompt you to select:
